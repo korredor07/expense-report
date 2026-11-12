@@ -38,6 +38,23 @@ def read_expenses(path: Path) -> list[Expense]:
         return [parse_row(row, n) for n, row in enumerate(csv.DictReader(f), start=2)]
 
 
+def totals(expenses: list[Expense]) -> dict[str, str]:
+    sums: dict[str, Decimal] = {}
+    for e in expenses:
+        sums[e.currency] = sums.get(e.currency, Decimal(0)) + e.amount
+    return {cur: str(sums[cur].quantize(Decimal("0.01"))) for cur in sorted(sums)}
+
+
+def summary_data(expenses: list[Expense]) -> dict:
+    days = sorted(e.day for e in expenses)
+    return {
+        "count": len(expenses),
+        "from": days[0].isoformat() if days else None,
+        "to": days[-1].isoformat() if days else None,
+        "totals": totals(expenses),
+    }
+
+
 def summary(expenses: list[Expense]) -> str:
     if not expenses:
         return "No expenses."
