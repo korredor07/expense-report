@@ -6,7 +6,15 @@ from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
-from report.expenses import Expense, ReportError, parse_row, read_expenses, summary
+from report.expenses import (
+    Expense,
+    ReportError,
+    currency_totals,
+    format_totals,
+    parse_row,
+    read_expenses,
+    summary,
+)
 
 ROW = {"date": "2026-10-03", "description": "Taxi", "amount": "12.50", "currency": "usd"}
 
@@ -64,6 +72,57 @@ class Cli(unittest.TestCase):
 
     def test_bad_file_exits_1(self) -> None:
         self.assertEqual(self.run_cli("missing.csv").returncode, 1)
+
+    def test_prints_currency_totals(self) -> None:
+        path = write_csv(
+            "date,description,amount,currency\n"
+            "2026-10-03,Taxi,12.50,USD\n"
+            "2026-10-05,Lunch,9,EUR\n"
+            "2026-10-06,Bus,1000,COP\n"
+        )
+        out = self.run_cli(str(path))
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertEqual(
+            out.stdout.splitlines(),
+            ["3 expenses from 2026-10-03 to 2026-10-06", "COP 1000.00", "EUR 9.00", "USD 12.50"],
+        )
+
+    def test_empty_csv_prints_only_no_expenses(self) -> None:
+        path = write_csv("date,description,amount,currency\n")
+        out = self.run_cli(str(path))
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertEqual(out.stdout.splitlines(), ["No expenses."])
+
+
+def exp(amount: str, currency: str) -> Expense:
+    return Expense(date(2026, 10, 3), "x", Decimal(amount), currency)
+
+
+class CurrencyTotals(unittest.TestCase):
+    def test_sums_per_currency(self) -> None:
+        totals = dict(currency_totals([exp("100.40", "EUR"), exp("41.50", "EUR")]))
+        self.assertEqual(totals["EUR"], Decimal("141.90"))
+
+    def test_currencies_not_mixed(self) -> None:
+        totals = dict(currency_totals([exp("5", "USD"), exp("7", "EUR")]))
+        self.assertEqual(totals, {"USD": Decimal("5.00"), "EUR": Decimal("7.00")})
+
+    def test_sorted_by_code(self) -> None:
+        result = currency_totals([exp("1", "USD"), exp("1", "EUR"), exp("1", "COP")])
+        self.assertEqual([c for c, _ in result], ["COP", "EUR", "USD"])
+
+    def test_exact_decimal_and_two_places(self) -> None:
+        result = currency_totals([exp("0.10", "USD"), exp("0.20", "USD")])
+        self.assertEqual(result, [("USD", Decimal("0.30"))])
+        self.assertEqual(str(currency_totals([exp("9", "EUR")])[0][1]), "9.00")
+
+    def test_formatted_line(self) -> None:
+        lines = format_totals([exp("100.40", "EUR"), exp("41.50", "EUR")])
+        self.assertEqual(lines, ["EUR 141.90"])
+
+    def test_empty(self) -> None:
+        self.assertEqual(currency_totals([]), [])
+        self.assertEqual(format_totals([]), [])
 
 
 if __name__ == "__main__":
