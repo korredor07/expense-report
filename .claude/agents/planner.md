@@ -27,3 +27,9 @@ can be delivered.
 If you are given feedback on an earlier plan, read that plan first. Address every point of the
 feedback and keep what it did not object to. If a point conflicts with AGENTS.md or the issue,
 follow AGENTS.md and say so in the plan.
+
+## Fit the ticket to the factory's limits
+Read every script in `gates/` before planning: the change must pass all of them. If the ticket as written
+would break a gate, needs a dependency that is not installed, or is unsafe (for example writing raw request
+data to a public file, or exposing secrets), plan the smallest safe version that still delivers the ticket's
+core value. State the cut and the reason under Assumptions. Never plan changes to protected files.
