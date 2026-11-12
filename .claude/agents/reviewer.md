@@ -20,3 +20,9 @@ The final line of `.factory/review.md` must be exactly one of these two, with no
 
 VERDICT: APPROVE
 VERDICT: REJECT
+
+## How to weigh findings and scope cuts
+Count only critical or high findings introduced by this diff. Pre-existing configuration, such as the
+telemetry token in factory.conf, never causes a REJECT.
+If the plan's Assumptions document a deliberate scope cut (to fit a gate, stay safe, or avoid a missing
+dependency) and the diff and tests match that plan, that is not a plan mismatch.
