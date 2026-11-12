@@ -38,6 +38,14 @@ def read_expenses(path: Path) -> list[Expense]:
         return [parse_row(row, n) for n, row in enumerate(csv.DictReader(f), start=2)]
 
 
+def top_expenses(expenses: list[Expense], n: int) -> list[Expense]:
+    return sorted(expenses, key=lambda e: e.amount, reverse=True)[:n]
+
+
+def format_expense(e: Expense) -> str:
+    return f"{e.day.isoformat()}  {e.description}  {e.amount} {e.currency}"
+
+
 def summary(expenses: list[Expense]) -> str:
     if not expenses:
         return "No expenses."
